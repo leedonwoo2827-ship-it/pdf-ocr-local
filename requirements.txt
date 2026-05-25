@@ -1,0 +1,17 @@
+# Backend (already installed in user env, listed for new machines)
+paddleocr==3.5.0
+paddlex==3.5.2
+# paddlepaddle-gpu==3.0.0  ; install separately from Paddle's CUDA index, e.g.:
+#   pip install paddlepaddle-gpu==3.0.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
+
+# PDF I/O
+pymupdf>=1.27.0
+pypdfium2>=4.30.0
+pypdf>=6.0
+
+# UI
+gradio>=6.8.0
+gradio_pdf>=0.0.24
+
+# Optional VLM track (uses local Ollama; no Python package needed beyond requests)
+requests>=2.31

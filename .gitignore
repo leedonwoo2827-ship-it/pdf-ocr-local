@@ -1,0 +1,49 @@
+# ---- 데이터/산출물 (저작권/용량 이슈로 업로드 제외) ----
+_assets/*.pdf
+_assets/*.md
+_assets/*.txt
+_assets/*.png
+_assets/*.jpg
+_assets/*.jpeg
+!_assets/.gitkeep
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- 가상환경 ----
+.venv/
+venv/
+env/
+ENV/
+
+# ---- IDE ----
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ---- Claude / 로컬 설정 ----
+.claude/
+*.local.json
+
+# ---- 모델 캐시 / 로그 ----
+*.log
+.paddlex/
+.cache/
+
+# ---- 기타 ----
+*.tmp
+*.bak
