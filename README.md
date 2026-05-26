@@ -29,6 +29,26 @@ python -m pipeline.runner _assets                       # 폴더 일괄
 python -m pipeline.runner _assets/... --quality --vlm   # 고품질 + VLM 보강
 ```
 
+## 폴더 구조
+
+```
+.
+├── _assets/    📦  내 PDF 를 두는 곳 (.gitignore 됨 → GitHub 에 절대 안 올라감)
+│               입력 before--*.pdf  /  결과 after--*.pdf  +  after--*.md
+├── assets/    🔤  앱 동봉 리소스 (git 추적). NanumGothic.ttf (한글 폰트, OFL)
+├── pipeline/  🧠  OCR 파이프라인 코드 (renderer / ocr_engine / pdf_writer ...)
+├── docs/      📖  설치·사용·아키텍처 상세
+├── app.py     🖥  Gradio UI 진입점
+├── setup.{bat,sh}  /  run.{bat,sh}
+└── requirements.txt, .gitignore, .gitattributes, README.md
+```
+
+**핵심**: `_assets/` 안에 어떤 PDF·MD·이미지를 넣어도 GitHub 에 올라가지 않습니다.
+저작권이 있는 교재 스캔본도 안심하고 거기 두세요. (실제 동작은 `git check-ignore` 로 검증 완료)
+오직 `_assets/.gitkeep` 파일만 git 에 올라가 빈 폴더 구조를 유지합니다.
+
+Gradio UI 에서 다운로드한 결과 PDF 도 `_assets/` 에 옮겨두면, 다음 실행 시 [폴더 배치] 탭에 자동으로 잡힙니다.
+
 ## 더 보기
 
 - 📥 [설치 / 트러블슈팅](docs/install.md)
