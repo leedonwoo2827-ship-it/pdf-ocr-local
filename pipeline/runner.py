@@ -170,14 +170,20 @@ def run_pipeline(
         page_md_by_1based: Dict[int, str] = {}
 
         if engine == "mineru":
+            # Mineru runtime scales with page count on this hardware (RTX 4070
+            # 8GB): roughly ~30s/page including table OCR. Use a dynamic
+            # timeout with a comfortable margin so 80-100 page books finish.
+            mineru_timeout = max(1800, total * 60)
             if progress_cb:
-                progress_cb(total, total, "MinerU layout-aware Markdown ...")
+                progress_cb(total, total, f"MinerU layout-aware Markdown (timeout {mineru_timeout//60}min) ...")
             from .mineru_engine import run_mineru_markdown, mineru_available
             if not mineru_available():
                 logger.warning("MinerU CLI not found; falling back to paddle markdown")
                 engine = "paddle"
             else:
-                md_text_m, pages_by_idx, mlog = run_mineru_markdown(src, backend=config.mineru_backend)
+                md_text_m, pages_by_idx, mlog = run_mineru_markdown(
+                    src, backend=config.mineru_backend, timeout=mineru_timeout,
+                )
                 if md_text_m is None:
                     logger.warning("MinerU failed (%s); falling back to paddle", mlog)
                     engine = "paddle"
@@ -202,9 +208,20 @@ def run_pipeline(
         if config.split_pages and page_md_by_1based:
             pages_dir = _pages_dir_for(out_pdf)
             written = write_page_files(page_md_by_1based, pages_dir)
+            # Also bundle as a single .zip so the Gradio UI can offer it as a
+            # one-click download (the UI doesn't natively expose 84 files).
+            zip_path = pages_dir.with_suffix(".zip")
+            try:
+                import zipfile
+                with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                    for pf in written:
+                        zf.write(pf, arcname=pf.name)
+            except Exception as e:
+                logger.warning("Could not build %s: %s", zip_path, e)
             if progress_cb:
-                progress_cb(total, total, f"Split into {len(written)} per-page .md -> {pages_dir.name}/")
-            logger.info("Per-page split: %d files in %s", len(written), pages_dir)
+                progress_cb(total, total,
+                            f"Split into {len(written)} per-page .md -> {pages_dir.name}/  (also: {zip_path.name})")
+            logger.info("Per-page split: %d files in %s (+ %s)", len(written), pages_dir, zip_path.name)
 
     dt = time.time() - t0
     if progress_cb:
