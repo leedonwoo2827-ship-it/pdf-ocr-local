@@ -77,15 +77,14 @@ def process_single(
     emit_md: bool,
     overwrite: bool,
     split_pages: bool,
-    progress=gr.Progress(),
 ):
+    # No gr.Progress: Gradio 6.0 leaves the widget stuck after completion,
+    # so we drive progress entirely through cmd stdout + the log box.
     if pdf_file is None:
         return (None, None, "PDF를 먼저 업로드하세요.",
                 gr.update(visible=False), gr.update(visible=False), gr.update(visible=False))
 
     src_path = Path(pdf_file if isinstance(pdf_file, str) else pdf_file.name)
-    # Move/copy the upload into assets/ so outputs land in a stable folder
-    # the user can browse directly in Explorer (no need to click Download).
     src_path = _import_into_assets(src_path)
     cfg = _build_cfg(mode, md_engine, use_vlm, threshold, emit_md, overwrite, split_pages)
 
@@ -93,14 +92,10 @@ def process_single(
         f"Source: {src_path}",
         f"Mode: {mode}, Markdown engine: {md_engine}, VLM: {use_vlm}, threshold: {threshold:.2f}",
     ]
-    # Echo the header to the launching cmd so users who double-clicked run.bat
-    # can see the same context they would see from `python -m pipeline.runner`.
     for line in log_lines:
         print(line, flush=True)
 
     def cb(done, total, msg):
-        if total > 0:
-            progress(done / total, desc=msg)
         line = f"[{done}/{total}] {msg}"
         log_lines.append(line)
         print(line, flush=True)  # mirror per-page progress to stdout (cmd)
@@ -112,8 +107,6 @@ def process_single(
         return (None, None, "\n".join(log_lines),
                 gr.update(visible=False), gr.update(visible=False), gr.update(visible=False))
 
-    # Force the progress widget to 100% so Gradio stops spinning the counter.
-    progress(1.0, desc="Done")
     log_lines.append(f"-> {out_pdf}")
     if out_md:
         log_lines.append(f"-> {out_md}")
@@ -157,7 +150,6 @@ def process_folder(
     emit_md: bool,
     overwrite: bool,
     split_pages: bool,
-    progress=gr.Progress(),
 ):
     folder = (folder or "").strip() or DEFAULT_BATCH_DIR
     p = Path(folder)
@@ -179,7 +171,6 @@ def process_folder(
     _emit(f"Folder batch: {len(pdfs)} file(s) under {folder}")
 
     for i, f in enumerate(pdfs):
-        progress(i / len(pdfs), desc=f"[{i+1}/{len(pdfs)}] {f.name}")
         _emit(f"[{i+1}/{len(pdfs)}] {f.name}")
 
         out_pdf, _ = derive_out_paths(f)
@@ -200,7 +191,6 @@ def process_folder(
             rows.append([f.name, f"실패: {e}", ""])
             _emit(f"  FAIL {f.name}: {e}")
 
-    progress(1.0, desc="배치 완료")
     _emit("Batch complete")
     return rows, "\n".join(logs)
 
