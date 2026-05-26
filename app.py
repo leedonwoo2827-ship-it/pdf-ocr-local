@@ -21,7 +21,7 @@ from pipeline.vlm_engine import ollama_available
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-DEFAULT_BATCH_DIR = r"d:\00work\260526-local-OCR\_assets"
+DEFAULT_BATCH_DIR = str(Path(__file__).resolve().parent / "_assets")
 
 
 def _build_cfg(mode: str, use_vlm: bool, threshold: float, emit_md: bool, overwrite: bool) -> PipelineConfig:

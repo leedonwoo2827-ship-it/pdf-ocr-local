@@ -1,0 +1,20 @@
+# 기본: 텍스트 자동 감지 + 라인엔딩 정규화
+* text=auto
+
+# Shell scripts MUST be LF (Linux/macOS에서 실행 가능해야 함)
+*.sh text eol=lf
+
+# Windows 배치는 CRLF
+*.bat text eol=crlf
+
+# Python / 마크다운 등은 git 기본 (자동)
+*.py text
+*.md text
+*.txt text
+
+# 바이너리 (라인엔딩 변환 금지)
+*.ttf binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
