@@ -65,11 +65,17 @@ def process_single(
         f"Source: {src_path}",
         f"Mode: {mode}, Markdown engine: {md_engine}, VLM: {use_vlm}, threshold: {threshold:.2f}",
     ]
+    # Echo the header to the launching cmd so users who double-clicked run.bat
+    # can see the same context they would see from `python -m pipeline.runner`.
+    for line in log_lines:
+        print(line, flush=True)
 
     def cb(done, total, msg):
         if total > 0:
             progress(done / total, desc=msg)
-        log_lines.append(f"[{done}/{total}] {msg}")
+        line = f"[{done}/{total}] {msg}"
+        log_lines.append(line)
+        print(line, flush=True)  # mirror per-page progress to stdout (cmd)
 
     try:
         out_pdf, out_md = run_pipeline(src_path, cfg, progress_cb=cb)
@@ -130,23 +136,37 @@ def process_folder(
     cfg = _build_cfg(mode, md_engine, use_vlm, threshold, emit_md, overwrite)
     rows: List[List[str]] = []
     logs: List[str] = []
+
+    def _emit(msg: str):
+        logs.append(msg)
+        print(msg, flush=True)
+
+    _emit(f"Folder batch: {len(pdfs)} file(s) under {folder}")
+
     for i, f in enumerate(pdfs):
         progress(i / len(pdfs), desc=f"[{i+1}/{len(pdfs)}] {f.name}")
+        _emit(f"[{i+1}/{len(pdfs)}] {f.name}")
 
         out_pdf, _ = derive_out_paths(f)
         if out_pdf.exists() and not overwrite:
             rows.append([f.name, "스킵(존재)", out_pdf.name])
-            logs.append(f"skip {f.name}")
+            _emit(f"  skip {f.name}")
             continue
+
+        def _file_cb(done, total, msg):
+            line = f"    [{done}/{total}] {msg}"
+            print(line, flush=True)
+
         try:
-            opdf, omd = run_pipeline(f, cfg, progress_cb=None)
+            opdf, omd = run_pipeline(f, cfg, progress_cb=_file_cb)
             rows.append([f.name, "완료", opdf.name])
-            logs.append(f"done {f.name} -> {opdf.name}")
+            _emit(f"  done {f.name} -> {opdf.name}")
         except Exception as e:
             rows.append([f.name, f"실패: {e}", ""])
-            logs.append(f"FAIL {f.name}: {e}")
+            _emit(f"  FAIL {f.name}: {e}")
 
     progress(1.0, desc="배치 완료")
+    _emit("Batch complete")
     return rows, "\n".join(logs)
 
 
