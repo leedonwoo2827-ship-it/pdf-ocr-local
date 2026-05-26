@@ -4,19 +4,21 @@
 
 자동 스크립트가 OS와 GPU 유무를 감지해 알맞은 PaddlePaddle 빌드를 설치합니다.
 
-## Windows
-```bat
-setup.bat
-```
+## Windows (탐색기 더블클릭)
+
+1. **`setup.bat`** 더블클릭 — 기본 의존성 설치
+2. *(선택)* **`setup_mineru.bat`** 더블클릭 — MinerU 모델 받기. **UAC 팝업이 뜨면 "예"**. 자동 관리자 권한 elevation 후 모델 ~2–3GB 다운로드 (5–15분). 끝나면 일반 권한으로 동작.
+3. **`run.bat`** 더블클릭 — Gradio 가 뜨고 약 6초 후 브라우저가 자동으로 <http://127.0.0.1:7860> 열림
 
 ## Linux / macOS
 ```bash
-chmod +x setup.sh run.sh    :: clone 직후 1회
+chmod +x setup.sh setup_mineru.sh run.sh    :: clone 직후 1회
 ./setup.sh
+./setup_mineru.sh    # (선택) MinerU 마크다운 엔진 모델 받기
+./run.sh
 ```
 
-> Linux에서 NVIDIA GPU가 있으면 `paddlepaddle-gpu` (CUDA 12.6 wheel)가, 없으면 CPU 빌드가 설치됩니다.
-> macOS는 PaddlePaddle GPU 빌드가 없어 CPU만 사용합니다 (Apple Silicon arm64 휠 지원).
+> Linux 에서 NVIDIA GPU 가 있으면 `paddlepaddle-gpu` (CUDA 12.6 wheel)가, 없으면 CPU 빌드가 설치됩니다. macOS 는 PaddlePaddle GPU 빌드가 없어 CPU 만 사용합니다 (Apple Silicon arm64 휠 지원). Linux/macOS 는 Windows 의 symlink 권한 이슈가 없어 `setup_mineru.sh` 는 sudo 가 필요 없습니다.
 
 ## 수동 설치 (스크립트가 실패할 때)
 

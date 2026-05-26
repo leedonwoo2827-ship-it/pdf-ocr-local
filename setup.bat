@@ -56,7 +56,13 @@ if exist "assets\fonts\NanumGothic.ttf" (
 echo.
 echo === Setup complete ===
 echo  - Verify GPU : python -c "import paddle; print(paddle.device.cuda.device_count())"
-echo  - Run UI     : run.bat
+echo  - Run UI     : run.bat                       (double-click also OK)
 echo  - CLI        : python -m pipeline.runner _assets\before--xxx.pdf
+echo.
+echo --- Optional: MinerU layout-aware Markdown ---
+echo  If you want the high-quality "mineru" markdown engine (preserves
+echo  tables / headings / numbered lists), double-click setup_mineru.bat
+echo  ONCE to fetch its models (~2-3 GB). It will request admin rights.
+echo  Skip this if you only need the basic markdown / searchable PDF.
 echo.
 pause

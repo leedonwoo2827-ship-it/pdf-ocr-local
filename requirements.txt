@@ -15,3 +15,8 @@ gradio_pdf>=0.0.24
 
 # Optional VLM track (uses local Ollama; no Python package needed beyond requests)
 requests>=2.31
+
+# Layout-aware Markdown engine (optional but recommended for textbook-style PDFs)
+# First run downloads ~2-3GB models from Hugging Face Hub. On Windows the cache
+# needs symlink permission - see docs/install.md ("Developer mode" or admin cmd).
+mineru>=3.1
