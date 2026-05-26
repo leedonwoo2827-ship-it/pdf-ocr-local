@@ -182,7 +182,7 @@ with gr.Blocks(title="Local OCR — before→after PDF", theme=gr.themes.Soft())
     with gr.Row():
         mode = gr.Radio(["Fast", "Quality"], value="Fast", label="OCR 모드", info="Fast=DPI200, Quality=DPI300 + unwarp")
         emit_md = gr.Checkbox(value=True, label="Markdown(.md) 도 함께 저장")
-        overwrite = gr.Checkbox(value=False, label="이미 있는 after--*.pdf 덮어쓰기")
+        overwrite = gr.Checkbox(value=True, label="이미 있는 after--*.pdf 덮어쓰기")
 
     with gr.Row():
         mineru_ok = mineru_available()
