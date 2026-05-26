@@ -80,7 +80,8 @@ def process_single(
     progress=gr.Progress(),
 ):
     if pdf_file is None:
-        return None, None, "PDF를 먼저 업로드하세요.", gr.update(visible=False), gr.update(visible=False)
+        return (None, None, "PDF를 먼저 업로드하세요.",
+                gr.update(visible=False), gr.update(visible=False), gr.update(visible=False))
 
     src_path = Path(pdf_file if isinstance(pdf_file, str) else pdf_file.name)
     # Move/copy the upload into assets/ so outputs land in a stable folder
@@ -108,21 +109,27 @@ def process_single(
         out_pdf, out_md = run_pipeline(src_path, cfg, progress_cb=cb)
     except Exception as e:
         log_lines.append(f"ERROR: {e}")
-        return None, None, "\n".join(log_lines), gr.update(visible=False), gr.update(visible=False)
+        return (None, None, "\n".join(log_lines),
+                gr.update(visible=False), gr.update(visible=False), gr.update(visible=False))
 
     # Force the progress widget to 100% so Gradio stops spinning the counter.
     progress(1.0, desc="Done")
     log_lines.append(f"-> {out_pdf}")
     if out_md:
         log_lines.append(f"-> {out_md}")
+    # The runner also writes assets/after--<stem>_pages.zip when split_pages is on.
+    zip_path = out_pdf.parent / f"{out_pdf.stem}_pages.zip"
+    zip_visible = zip_path.exists()
+    if zip_visible:
+        log_lines.append(f"-> {zip_path}")
     log = "\n".join(log_lines)
     md_visible = out_md is not None
     return (
         str(out_pdf),                                                 # result PDF preview
         str(out_pdf),                                                 # download (pdf)
         log,                                                          # log textbox
-        gr.update(value=str(out_md) if md_visible else None, visible=md_visible),  # download md
-        gr.update(visible=True),                                      # download pdf visible
+        gr.update(value=str(out_md) if md_visible else None, visible=md_visible),  # md download
+        gr.update(value=str(zip_path) if zip_visible else None, visible=zip_visible),  # zip download
     )
 
 
@@ -262,12 +269,13 @@ with gr.Blocks(title="Local OCR — before→after PDF", theme=gr.themes.Soft())
                 with gr.Column():
                     out_pdf_preview = PDF(label="결과 미리보기 (검색가능 PDF)", interactive=False)
                     out_pdf_dl = gr.File(label="검색가능 PDF 다운로드", visible=False)
-                    out_md_dl = gr.File(label="Markdown 다운로드", visible=False)
+                    out_md_dl = gr.File(label="Markdown 다운로드 (통합)", visible=False)
+                    out_zip_dl = gr.File(label="페이지별 .md (.zip) 다운로드", visible=False)
             log_box = gr.Textbox(label="로그", lines=10, max_lines=20)
             run_btn.click(
                 process_single,
                 inputs=[in_file, mode, md_engine, use_vlm, threshold, emit_md, overwrite, split_pages],
-                outputs=[out_pdf_preview, out_pdf_dl, log_box, out_md_dl, out_pdf_dl],
+                outputs=[out_pdf_preview, out_pdf_dl, log_box, out_md_dl, out_zip_dl],
             )
 
         # ----- Folder batch -----
