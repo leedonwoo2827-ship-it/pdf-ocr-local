@@ -53,6 +53,7 @@ def _build_cfg(
     threshold: float,
     emit_md: bool,
     overwrite: bool,
+    split_pages: bool,
 ) -> PipelineConfig:
     return PipelineConfig(
         quality=(mode == "Quality"),
@@ -61,6 +62,7 @@ def _build_cfg(
         use_vlm=use_vlm,
         vlm_threshold=threshold,
         overwrite=overwrite,
+        split_pages=split_pages,
     )
 
 
@@ -74,6 +76,7 @@ def process_single(
     threshold: float,
     emit_md: bool,
     overwrite: bool,
+    split_pages: bool,
     progress=gr.Progress(),
 ):
     if pdf_file is None:
@@ -83,7 +86,7 @@ def process_single(
     # Move/copy the upload into assets/ so outputs land in a stable folder
     # the user can browse directly in Explorer (no need to click Download).
     src_path = _import_into_assets(src_path)
-    cfg = _build_cfg(mode, md_engine, use_vlm, threshold, emit_md, overwrite)
+    cfg = _build_cfg(mode, md_engine, use_vlm, threshold, emit_md, overwrite, split_pages)
 
     log_lines: List[str] = [
         f"Source: {src_path}",
@@ -146,6 +149,7 @@ def process_folder(
     threshold: float,
     emit_md: bool,
     overwrite: bool,
+    split_pages: bool,
     progress=gr.Progress(),
 ):
     folder = (folder or "").strip() or DEFAULT_BATCH_DIR
@@ -157,7 +161,7 @@ def process_folder(
     if not pdfs:
         return [], "before--*.pdf 파일이 없습니다."
 
-    cfg = _build_cfg(mode, md_engine, use_vlm, threshold, emit_md, overwrite)
+    cfg = _build_cfg(mode, md_engine, use_vlm, threshold, emit_md, overwrite, split_pages)
     rows: List[List[str]] = []
     logs: List[str] = []
 
@@ -207,6 +211,8 @@ with gr.Blocks(title="Local OCR — before→after PDF", theme=gr.themes.Soft())
         mode = gr.Radio(["Fast", "Quality"], value="Quality", label="OCR 모드", info="Fast=DPI200 빠름, Quality=DPI300 + unwarp 권장")
         emit_md = gr.Checkbox(value=True, label="Markdown(.md) 도 함께 저장")
         overwrite = gr.Checkbox(value=True, label="이미 있는 after--*.pdf 덮어쓰기")
+        split_pages = gr.Checkbox(value=True, label="페이지별 .md 분할 (RAG용)",
+                                  info="assets/after--<이름>_pages/page-001.md ...")
 
     with gr.Row():
         mineru_ok = mineru_available()
@@ -260,7 +266,7 @@ with gr.Blocks(title="Local OCR — before→after PDF", theme=gr.themes.Soft())
             log_box = gr.Textbox(label="로그", lines=10, max_lines=20)
             run_btn.click(
                 process_single,
-                inputs=[in_file, mode, md_engine, use_vlm, threshold, emit_md, overwrite],
+                inputs=[in_file, mode, md_engine, use_vlm, threshold, emit_md, overwrite, split_pages],
                 outputs=[out_pdf_preview, out_pdf_dl, log_box, out_md_dl, out_pdf_dl],
             )
 
@@ -283,7 +289,7 @@ with gr.Blocks(title="Local OCR — before→after PDF", theme=gr.themes.Soft())
             list_btn.click(list_folder, inputs=folder_path, outputs=[files_table, list_status])
             run_batch_btn.click(
                 process_folder,
-                inputs=[folder_path, mode, md_engine, use_vlm, threshold, emit_md, overwrite],
+                inputs=[folder_path, mode, md_engine, use_vlm, threshold, emit_md, overwrite, split_pages],
                 outputs=[files_table, batch_log],
             )
             demo.load(list_folder, inputs=folder_path, outputs=[files_table, list_status])
