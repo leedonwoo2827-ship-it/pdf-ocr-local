@@ -10,6 +10,7 @@ Open: http://127.0.0.1:7860
 from __future__ import annotations
 
 import logging
+import shutil
 from pathlib import Path
 from typing import List, Tuple
 
@@ -22,7 +23,27 @@ from pipeline.mineru_engine import mineru_available
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-DEFAULT_BATCH_DIR = str(Path(__file__).resolve().parent / "_assets")
+ASSETS_DIR = Path(__file__).resolve().parent / "assets"
+DEFAULT_BATCH_DIR = str(ASSETS_DIR)
+
+
+def _import_into_assets(src: Path) -> Path:
+    """Copy a Gradio-uploaded PDF into assets/ so outputs land there too.
+
+    The pipeline writes after--*.pdf / .md next to the input PDF, so by
+    moving the input into a stable folder we get a stable output location
+    that users can browse in Explorer without going through the Gradio
+    download buttons.
+    """
+    ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+    target = ASSETS_DIR / src.name
+    try:
+        if target.resolve() == src.resolve():
+            return target
+    except (OSError, ValueError):
+        pass
+    shutil.copyfile(src, target)
+    return target
 
 
 def _build_cfg(
@@ -59,6 +80,9 @@ def process_single(
         return None, None, "PDF를 먼저 업로드하세요.", gr.update(visible=False), gr.update(visible=False)
 
     src_path = Path(pdf_file if isinstance(pdf_file, str) else pdf_file.name)
+    # Move/copy the upload into assets/ so outputs land in a stable folder
+    # the user can browse directly in Explorer (no need to click Download).
+    src_path = _import_into_assets(src_path)
     cfg = _build_cfg(mode, md_engine, use_vlm, threshold, emit_md, overwrite)
 
     log_lines: List[str] = [
@@ -198,8 +222,27 @@ with gr.Blocks(title="Local OCR — before→after PDF", theme=gr.themes.Soft())
 
     with gr.Row():
         vlm_ok = ollama_available()
-        use_vlm = gr.Checkbox(value=False, label=f"VLM 보강 (Ollama qwen2.5vl:7b){'' if vlm_ok else ' — Ollama 응답 없음'}", interactive=vlm_ok)
-        threshold = gr.Slider(0.0, 1.0, value=0.7, step=0.05, label="VLM 트리거: 페이지 평균 신뢰도 임계값")
+        # VLM 보강은 paddle 마크다운 트랙 전용 — mineru 선택 시 꺼두고 비활성화.
+        initial_vlm_enabled = vlm_ok and not mineru_ok  # mineru 가 기본이면 VLM 꺼둠
+        use_vlm = gr.Checkbox(
+            value=False,
+            label=f"VLM 보강 (Ollama qwen2.5vl:7b){'' if vlm_ok else ' — Ollama 응답 없음'}",
+            interactive=initial_vlm_enabled,
+        )
+        threshold = gr.Slider(
+            0.0, 1.0, value=0.7, step=0.05,
+            label="VLM 트리거: 페이지 평균 신뢰도 임계값",
+            interactive=initial_vlm_enabled,
+        )
+
+    # mineru 일 때 VLM 컨트롤 회색 처리 (paddle 마크다운에서만 의미 있음)
+    def _toggle_vlm_controls(engine: str):
+        is_paddle = (engine == "paddle")
+        return (
+            gr.update(interactive=(is_paddle and vlm_ok), value=False),
+            gr.update(interactive=(is_paddle and vlm_ok)),
+        )
+    md_engine.change(_toggle_vlm_controls, inputs=md_engine, outputs=[use_vlm, threshold])
 
     with gr.Tabs():
         # ----- Single file -----

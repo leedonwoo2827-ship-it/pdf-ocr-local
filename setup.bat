@@ -57,7 +57,7 @@ echo.
 echo === Setup complete ===
 echo  - Verify GPU : python -c "import paddle; print(paddle.device.cuda.device_count())"
 echo  - Run UI     : run.bat                       (double-click also OK)
-echo  - CLI        : python -m pipeline.runner _assets\before--xxx.pdf
+echo  - CLI        : python -m pipeline.runner assets\before--xxx.pdf
 echo.
 echo --- Optional: MinerU layout-aware Markdown ---
 echo  If you want the high-quality "mineru" markdown engine (preserves

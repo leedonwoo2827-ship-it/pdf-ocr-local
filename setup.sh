@@ -80,7 +80,7 @@ echo
 echo "=== Setup complete ==="
 echo "  Verify GPU :  $PY -c 'import paddle; print(paddle.device.cuda.device_count())'"
 echo "  Run UI     :  ./run.sh"
-echo "  CLI        :  $PY -m pipeline.runner _assets/before--xxx.pdf"
+echo "  CLI        :  $PY -m pipeline.runner assets/before--xxx.pdf"
 echo
 echo "--- Optional: MinerU layout-aware Markdown ---"
 echo "  For the high-quality 'mineru' markdown engine (tables / headings /"

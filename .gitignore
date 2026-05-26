@@ -1,11 +1,18 @@
-# ---- 데이터/산출물 (저작권/용량 이슈로 업로드 제외) ----
-_assets/*.pdf
-_assets/*.md
-_assets/*.txt
-_assets/*.png
-_assets/*.jpg
-_assets/*.jpeg
-!_assets/.gitkeep
+# ---- 사용자 데이터 (저작권/용량 이슈로 업로드 제외) ----
+# assets/ 는 입출력 폴더이자 동봉 자산(폰트) 폴더입니다.
+# 폰트만 git 추적하고, 사용자 PDF/MD/이미지는 모두 무시합니다.
+assets/*.pdf
+assets/*.md
+assets/*.txt
+assets/*.png
+assets/*.jpg
+assets/*.jpeg
+assets/_*
+!assets/fonts/
+!assets/fonts/**
+
+# 구버전 호환: _assets/ 는 폐기됨. 우연히 남아있어도 무시.
+_assets/
 
 # ---- Python ----
 __pycache__/

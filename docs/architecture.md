@@ -41,12 +41,15 @@ TextLine[] (x_pt, y_pt, width_pt, height_pt, text, score, fontsize)
 ├── pipeline/
 │   ├── renderer.py              # pypdfium2 PDF → PIL Image
 │   ├── ocr_engine.py            # PaddleOCR Fast/Quality 모드 싱글톤
+│   ├── mineru_engine.py         # MinerU CLI 래퍼 (옵션 마크다운 엔진)
 │   ├── coord.py                 # 픽셀 → PDF point 변환
 │   ├── pdf_writer.py            # PyMuPDF invisible text 레이어 삽입
 │   ├── vlm_engine.py            # Ollama qwen2.5vl HTTP 호출
 │   └── runner.py                # 오케스트레이션 + CLI
-├── assets/fonts/NanumGothic.ttf # 한글 임베딩 폰트 (OFL)
-└── _assets/                     # 입출력 (PDF는 gitignore)
+└── assets/                      # 입출력 + 동봉 폰트
+    ├── before--*.pdf            # 입력 (gitignored)
+    ├── after--*.pdf / .md       # 출력 (gitignored)
+    └── fonts/NanumGothic.ttf    # 한글 임베딩 폰트 (OFL, git 추적)
 ```
 
 ## 엔진 선택 근거

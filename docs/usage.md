@@ -2,8 +2,8 @@
 
 ## 입출력 규약
 
-- 입력: `_assets/before--<이름>.pdf`
-- 출력: `_assets/after--<이름>.pdf` (검색가능 PDF) + `_assets/after--<이름>.md` (Markdown)
+- 입력: `assets/before--<이름>.pdf`
+- 출력: `assets/after--<이름>.pdf` (검색가능 PDF) + `assets/after--<이름>.md` (Markdown)
 - `before--` 접두사가 없으면 출력은 `<원본 stem>_ocr.pdf` 가 됩니다.
 
 ## Gradio UI
@@ -15,7 +15,7 @@ run.bat         # Windows
 브라우저: <http://127.0.0.1:7860>
 
 - **[단일 파일] 탭**: PDF를 드롭 → 좌측에 원본 미리보기 → "변환 시작" → 우측에 결과 PDF + 다운로드 (PDF, MD)
-- **[폴더 배치] 탭**: 기본 경로 `_assets/` 의 `before--*.pdf` 가 자동 목록화 → "일괄 변환 시작"
+- **[폴더 배치] 탭**: 기본 경로 `assets/` 의 `before--*.pdf` 가 자동 목록화 → "일괄 변환 시작"
 - 사이드바
   - **Fast / Quality** 라디오
   - **VLM 보강** 체크박스 (Ollama 미실행 시 비활성)
@@ -27,27 +27,27 @@ run.bat         # Windows
 
 ```bash
 # 단일 파일
-python -m pipeline.runner _assets/before--myscan.pdf
+python -m pipeline.runner assets/before--myscan.pdf
 
 # 폴더 배치 (모든 before--*.pdf 처리)
-python -m pipeline.runner _assets
+python -m pipeline.runner assets
 
 # Quality 모드 (DPI 300, doc_unwarping, textline_orientation)
-python -m pipeline.runner _assets/before--myscan.pdf --quality
+python -m pipeline.runner assets/before--myscan.pdf --quality
 
 # Markdown 엔진을 MinerU (레이아웃 인식) 로
-python -m pipeline.runner _assets/before--myscan.pdf --md-engine mineru
+python -m pipeline.runner assets/before--myscan.pdf --md-engine mineru
 # MinerU 백엔드 변경 (pipeline | vlm-auto-engine | hybrid-auto-engine)
-python -m pipeline.runner _assets/... --md-engine mineru --mineru-backend hybrid-auto-engine
+python -m pipeline.runner assets/... --md-engine mineru --mineru-backend hybrid-auto-engine
 
 # VLM 보강 + 임계값 (paddle Markdown 트랙에서 어려운 페이지만)
-python -m pipeline.runner _assets/before--myscan.pdf --vlm --threshold 0.7
+python -m pipeline.runner assets/before--myscan.pdf --vlm --threshold 0.7
 
 # Markdown 미생성
-python -m pipeline.runner _assets/before--myscan.pdf --no-md
+python -m pipeline.runner assets/before--myscan.pdf --no-md
 
 # 이미 있는 결과 덮어쓰기
-python -m pipeline.runner _assets/before--myscan.pdf --overwrite
+python -m pipeline.runner assets/before--myscan.pdf --overwrite
 ```
 
 ## 모드 비교 (A4 84p 기준 RTX 4070 8GB)
@@ -72,7 +72,7 @@ python -m pipeline.runner _assets/before--myscan.pdf --overwrite
 1. **Windows 개발자 모드 ON** (권장, 일회성)
    - 설정(Win+I) → 시스템 → 개발자용 → "개발자 모드" 토글
 2. 또는 첫 다운로드만 **관리자 권한 cmd** 로 실행
-   - `mineru -p _assets\before--xxx.pdf -o _assets\_mineru_tmp -b pipeline -l korean -s 0 -e 0`
+   - `mineru -p assets\before--xxx.pdf -o assets\_mineru_tmp -b pipeline -l korean -s 0 -e 0`
    - 다운로드 끝나면 일반 권한으로 OK
 
 **VLM 보강 동작**:
@@ -85,7 +85,7 @@ python -m pipeline.runner _assets/before--myscan.pdf --overwrite
 
 ```python
 import fitz
-doc = fitz.open("_assets/after--myscan.pdf")
+doc = fitz.open("assets/after--myscan.pdf")
 print("총 글자 수:", sum(len(p.get_text()) for p in doc))
 print("'테이블' 검색:", sum(1 for p in doc if '테이블' in p.get_text()), "페이지")
 ```
