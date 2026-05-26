@@ -77,6 +77,11 @@ def process_single(
         log_lines.append(f"ERROR: {e}")
         return None, None, "\n".join(log_lines), gr.update(visible=False), gr.update(visible=False)
 
+    # Force the progress widget to 100% so Gradio stops spinning the counter.
+    progress(1.0, desc="Done")
+    log_lines.append(f"-> {out_pdf}")
+    if out_md:
+        log_lines.append(f"-> {out_md}")
     log = "\n".join(log_lines)
     md_visible = out_md is not None
     return (

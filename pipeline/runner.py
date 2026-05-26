@@ -77,6 +77,8 @@ def run_pipeline(
     out_pdf, out_md = derive_out_paths(src)
     if out_pdf.exists() and not config.overwrite:
         logger.info("Skip (exists): %s", out_pdf.name)
+        if progress_cb:
+            progress_cb(1, 1, f"Skipped: {out_pdf.name} already exists (enable overwrite to rerun)")
         return out_pdf, (out_md if (config.emit_markdown and out_md.exists()) else None)
 
     total = page_count(src)
