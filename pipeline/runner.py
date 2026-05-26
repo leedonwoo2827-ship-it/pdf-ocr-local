@@ -20,8 +20,10 @@ logger = logging.getLogger(__name__)
 class PipelineConfig:
     quality: bool = False         # False=Fast (DPI 200), True=Quality (DPI 300)
     emit_markdown: bool = True
-    use_vlm: bool = False
-    vlm_threshold: float = 0.7    # if avg page rec_score below -> call VLM
+    markdown_engine: str = "paddle"   # "paddle" | "mineru" | "vlm"
+    mineru_backend: str = "pipeline"  # "pipeline" | "vlm-auto-engine" | "hybrid-auto-engine"
+    use_vlm: bool = False             # legacy: per-page VLM enrichment of paddle output
+    vlm_threshold: float = 0.7        # if avg page rec_score below -> call VLM
     overwrite: bool = False
 
     @property
@@ -117,17 +119,37 @@ def run_pipeline(
     # Write searchable PDF (use PaddleOCR bboxes; VLM does not replace text-layer)
     write_searchable_pdf(src, out_pdf, page_lines)
 
-    # Emit Markdown
+    # Emit Markdown — engine is selectable
     md_path: Optional[Path] = None
     if config.emit_markdown:
-        md_parts: List[str] = []
-        for i in range(total):
-            md_parts.append(f"\n\n<!-- page {i + 1} -->\n")
-            if i in vlm_md:
-                md_parts.append(vlm_md[i])
+        engine = (config.markdown_engine or "paddle").lower()
+        md_text: str = ""
+
+        if engine == "mineru":
+            if progress_cb:
+                progress_cb(total, total, "MinerU layout-aware Markdown ...")
+            from .mineru_engine import run_mineru_markdown, mineru_available
+            if not mineru_available():
+                logger.warning("MinerU CLI not found; falling back to paddle markdown")
+                engine = "paddle"
             else:
-                md_parts.append(page_texts.get(i, ""))
-        out_md.write_text("".join(md_parts).strip() + "\n", encoding="utf-8")
+                md_text, mlog = run_mineru_markdown(src, backend=config.mineru_backend)
+                if md_text is None:
+                    logger.warning("MinerU failed (%s); falling back to paddle", mlog)
+                    md_text = ""
+                    engine = "paddle"
+
+        if engine == "paddle" or not md_text:
+            md_parts: List[str] = []
+            for i in range(total):
+                md_parts.append(f"\n\n<!-- page {i + 1} -->\n")
+                if i in vlm_md:
+                    md_parts.append(vlm_md[i])
+                else:
+                    md_parts.append(page_texts.get(i, ""))
+            md_text = "".join(md_parts)
+
+        out_md.write_text(md_text.strip() + "\n", encoding="utf-8")
         md_path = out_md
 
     dt = time.time() - t0
@@ -163,7 +185,11 @@ def _cli():
     ap.add_argument("path", help="PDF file or folder containing before--*.pdf")
     ap.add_argument("--quality", action="store_true", help="Quality mode (DPI 300, slower)")
     ap.add_argument("--no-md", action="store_true", help="Skip Markdown output")
-    ap.add_argument("--vlm", action="store_true", help="Use Ollama VLM for low-confidence pages")
+    ap.add_argument("--md-engine", choices=["paddle", "mineru"], default="paddle",
+                    help="Markdown engine: paddle (raw OCR text) | mineru (layout-aware)")
+    ap.add_argument("--mineru-backend", choices=["pipeline", "vlm-auto-engine", "hybrid-auto-engine"],
+                    default="pipeline", help="MinerU backend if --md-engine=mineru")
+    ap.add_argument("--vlm", action="store_true", help="Use Ollama VLM for low-confidence pages (paddle md only)")
     ap.add_argument("--threshold", type=float, default=0.7, help="VLM trigger threshold")
     ap.add_argument("--overwrite", action="store_true")
     args = ap.parse_args()
@@ -172,6 +198,8 @@ def _cli():
     cfg = PipelineConfig(
         quality=args.quality,
         emit_markdown=not args.no_md,
+        markdown_engine=args.md_engine,
+        mineru_backend=args.mineru_backend,
         use_vlm=args.vlm,
         vlm_threshold=args.threshold,
         overwrite=args.overwrite,

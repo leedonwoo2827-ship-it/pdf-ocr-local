@@ -18,16 +18,25 @@ from gradio_pdf import PDF
 
 from pipeline.runner import PipelineConfig, run_pipeline, derive_out_paths
 from pipeline.vlm_engine import ollama_available
+from pipeline.mineru_engine import mineru_available
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 DEFAULT_BATCH_DIR = str(Path(__file__).resolve().parent / "_assets")
 
 
-def _build_cfg(mode: str, use_vlm: bool, threshold: float, emit_md: bool, overwrite: bool) -> PipelineConfig:
+def _build_cfg(
+    mode: str,
+    md_engine: str,
+    use_vlm: bool,
+    threshold: float,
+    emit_md: bool,
+    overwrite: bool,
+) -> PipelineConfig:
     return PipelineConfig(
         quality=(mode == "Quality"),
         emit_markdown=emit_md,
+        markdown_engine=md_engine.lower(),
         use_vlm=use_vlm,
         vlm_threshold=threshold,
         overwrite=overwrite,
@@ -39,6 +48,7 @@ def _build_cfg(mode: str, use_vlm: bool, threshold: float, emit_md: bool, overwr
 def process_single(
     pdf_file,
     mode: str,
+    md_engine: str,
     use_vlm: bool,
     threshold: float,
     emit_md: bool,
@@ -49,10 +59,12 @@ def process_single(
         return None, None, "PDF를 먼저 업로드하세요.", gr.update(visible=False), gr.update(visible=False)
 
     src_path = Path(pdf_file if isinstance(pdf_file, str) else pdf_file.name)
-    # Copy / rename input into _assets if user dropped from elsewhere? No — keep in place.
-    cfg = _build_cfg(mode, use_vlm, threshold, emit_md, overwrite)
+    cfg = _build_cfg(mode, md_engine, use_vlm, threshold, emit_md, overwrite)
 
-    log_lines: List[str] = [f"Source: {src_path}", f"Mode: {mode}, VLM: {use_vlm}, threshold: {threshold:.2f}"]
+    log_lines: List[str] = [
+        f"Source: {src_path}",
+        f"Mode: {mode}, Markdown engine: {md_engine}, VLM: {use_vlm}, threshold: {threshold:.2f}",
+    ]
 
     def cb(done, total, msg):
         if total > 0:
@@ -94,6 +106,7 @@ def list_folder(folder: str):
 def process_folder(
     folder: str,
     mode: str,
+    md_engine: str,
     use_vlm: bool,
     threshold: float,
     emit_md: bool,
@@ -109,7 +122,7 @@ def process_folder(
     if not pdfs:
         return [], "before--*.pdf 파일이 없습니다."
 
-    cfg = _build_cfg(mode, use_vlm, threshold, emit_md, overwrite)
+    cfg = _build_cfg(mode, md_engine, use_vlm, threshold, emit_md, overwrite)
     rows: List[List[str]] = []
     logs: List[str] = []
     for i, f in enumerate(pdfs):
@@ -142,9 +155,21 @@ with gr.Blocks(title="Local OCR — before→after PDF", theme=gr.themes.Soft())
     )
 
     with gr.Row():
-        mode = gr.Radio(["Fast", "Quality"], value="Fast", label="모드", info="Fast=DPI200, Quality=DPI300 + unwarp")
+        mode = gr.Radio(["Fast", "Quality"], value="Fast", label="OCR 모드", info="Fast=DPI200, Quality=DPI300 + unwarp")
         emit_md = gr.Checkbox(value=True, label="Markdown(.md) 도 함께 저장")
         overwrite = gr.Checkbox(value=False, label="이미 있는 after--*.pdf 덮어쓰기")
+
+    with gr.Row():
+        mineru_ok = mineru_available()
+        md_engine_choices = ["paddle"] + (["mineru"] if mineru_ok else [])
+        md_engine = gr.Radio(
+            md_engine_choices,
+            value="paddle",
+            label="Markdown 엔진",
+            info=("paddle = 빠른 라인 텍스트 (PDF 검색은 그대로). "
+                  + ("mineru = 레이아웃 인식 마크다운 (표/제목/번호 구조 보존, 첫 실행 시 모델 ~2-3GB 다운로드)" if mineru_ok
+                     else "mineru CLI 없음 — pip install mineru 후 재시작")),
+        )
 
     with gr.Row():
         vlm_ok = ollama_available()
@@ -167,7 +192,7 @@ with gr.Blocks(title="Local OCR — before→after PDF", theme=gr.themes.Soft())
             log_box = gr.Textbox(label="로그", lines=10, max_lines=20)
             run_btn.click(
                 process_single,
-                inputs=[in_file, mode, use_vlm, threshold, emit_md, overwrite],
+                inputs=[in_file, mode, md_engine, use_vlm, threshold, emit_md, overwrite],
                 outputs=[out_pdf_preview, out_pdf_dl, log_box, out_md_dl, out_pdf_dl],
             )
 
@@ -190,7 +215,7 @@ with gr.Blocks(title="Local OCR — before→after PDF", theme=gr.themes.Soft())
             list_btn.click(list_folder, inputs=folder_path, outputs=[files_table, list_status])
             run_batch_btn.click(
                 process_folder,
-                inputs=[folder_path, mode, use_vlm, threshold, emit_md, overwrite],
+                inputs=[folder_path, mode, md_engine, use_vlm, threshold, emit_md, overwrite],
                 outputs=[files_table, batch_log],
             )
             demo.load(list_folder, inputs=folder_path, outputs=[files_table, list_status])

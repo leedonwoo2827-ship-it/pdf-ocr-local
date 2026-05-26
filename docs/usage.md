@@ -35,7 +35,12 @@ python -m pipeline.runner _assets
 # Quality 모드 (DPI 300, doc_unwarping, textline_orientation)
 python -m pipeline.runner _assets/before--myscan.pdf --quality
 
-# VLM 보강 + 임계값
+# Markdown 엔진을 MinerU (레이아웃 인식) 로
+python -m pipeline.runner _assets/before--myscan.pdf --md-engine mineru
+# MinerU 백엔드 변경 (pipeline | vlm-auto-engine | hybrid-auto-engine)
+python -m pipeline.runner _assets/... --md-engine mineru --mineru-backend hybrid-auto-engine
+
+# VLM 보강 + 임계값 (paddle Markdown 트랙에서 어려운 페이지만)
 python -m pipeline.runner _assets/before--myscan.pdf --vlm --threshold 0.7
 
 # Markdown 미생성
@@ -52,6 +57,23 @@ python -m pipeline.runner _assets/before--myscan.pdf --overwrite
 | **Fast** (기본) | 200 | det+rec | ~2분 | 깨끗한 인쇄물 스캔 |
 | **Quality** | 300 | + cls + textline_orientation + doc_unwarping | ~5분 | 비스듬한 스캔, 작은 글자, 흐릿한 원본 |
 | **VLM 보강** | (위에 추가) | 평균 신뢰도 < 임계값인 페이지만 `qwen2.5vl:7b` 호출 | +초/페이지 | 손글씨, 복잡한 표, 특수 레이아웃 |
+
+### Markdown 엔진 선택
+
+| 엔진 | 결과물 특성 | 처리시간 추가 | 용도 |
+|---|---|---|---|
+| **paddle** (기본) | 라인 단위 텍스트를 reading order로 단순 정렬 | 0 (PDF OCR 결과 재사용) | 빠른 텍스트 추출, 구조보다 검색 우선 |
+| **mineru** | LayoutLMv3 기반 레이아웃 인식 → 표는 GFM 표로, 제목/번호 목록 자동 인식 | 페이지당 +5–10초 | 교재/문서처럼 박스·표·2단 컬럼 많은 PDF |
+
+`--md-engine mineru` 사용 시 검색가능 PDF는 그대로 PaddleOCR 트랙에서 생성되고, Markdown만 MinerU 출력으로 대체됩니다.
+
+**MinerU 첫 실행 주의**: Hugging Face Hub 에서 모델(~2–3GB)을 다운로드합니다. Windows는 일반 사용자 권한으로 캐시 symlink 생성이 막혀 다음 중 하나가 필요합니다:
+
+1. **Windows 개발자 모드 ON** (권장, 일회성)
+   - 설정(Win+I) → 시스템 → 개발자용 → "개발자 모드" 토글
+2. 또는 첫 다운로드만 **관리자 권한 cmd** 로 실행
+   - `mineru -p _assets\before--xxx.pdf -o _assets\_mineru_tmp -b pipeline -l korean -s 0 -e 0`
+   - 다운로드 끝나면 일반 권한으로 OK
 
 **VLM 보강 동작**:
 1. PaddleOCR가 모든 페이지를 1차 처리하고 페이지별 `rec_scores` 평균을 계산
