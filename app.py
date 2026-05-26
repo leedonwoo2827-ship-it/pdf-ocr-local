@@ -169,11 +169,11 @@ with gr.Blocks(title="Local OCR — before→after PDF", theme=gr.themes.Soft())
         md_engine_choices = ["paddle"] + (["mineru"] if mineru_ok else [])
         md_engine = gr.Radio(
             md_engine_choices,
-            value="paddle",
+            value=("mineru" if mineru_ok else "paddle"),
             label="Markdown 엔진",
-            info=("paddle = 빠른 라인 텍스트 (PDF 검색은 그대로). "
-                  + ("mineru = 레이아웃 인식 마크다운 (표/제목/번호 구조 보존, 첫 실행 시 모델 ~2-3GB 다운로드)" if mineru_ok
-                     else "mineru CLI 없음 — pip install mineru 후 재시작")),
+            info=("mineru = 레이아웃 인식 마크다운 (표/제목/번호 구조 보존, 권장). "
+                  "paddle = 빠른 라인 텍스트 (PDF 검색은 그대로)." if mineru_ok
+                  else "mineru CLI 없음 → setup_mineru.bat 더블클릭 후 재시작하면 mineru도 선택 가능"),
         )
 
     with gr.Row():
